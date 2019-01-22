@@ -1,4 +1,6 @@
-export function poptions(name, values) { return new POptions(name, values); }
+export function poptions(name, values) {
+    return new POptions(name, values);
+}
 class POptions {
     constructor(name, values) {
         this.name = name;

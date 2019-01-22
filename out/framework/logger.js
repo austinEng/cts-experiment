@@ -50,44 +50,28 @@ export class CaseRecorder {
     log(msg) {
         this.logs.push(msg);
     }
-    fail(msg) {
-        this.failImpl(msg);
-    }
     warn(msg) {
-        this.warnImpl(msg);
-    }
-    ok(msg) {
-        if (msg) {
-            this.log("PASS: " + msg);
-        }
-        else {
-            this.log("PASS");
-        }
-    }
-    expect(cond, msg) {
-        if (cond) {
-            this.ok(msg);
-        }
-        else {
-            this.failImpl(msg);
-        }
-    }
-    warnImpl(msg) {
         this.warned = true;
         let m = "WARN";
         if (msg) {
             m += ": " + msg;
         }
-        m += " " + getStackTrace();
+        m += " " + getStackTrace(new Error());
         this.log(m);
     }
-    failImpl(msg) {
+    fail(msg) {
         this.failed = true;
         let m = "FAIL";
         if (msg) {
             m += ": " + msg;
         }
-        m += " " + getStackTrace();
+        m += " " + getStackTrace(new Error());
+        this.log(m);
+    }
+    threw(e) {
+        this.failed = true;
+        let m = "EXCEPTION";
+        m += " " + getStackTrace(e);
         this.log(m);
     }
 }

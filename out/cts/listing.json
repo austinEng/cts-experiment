@@ -1,11 +1,23 @@
 [
   {
+    "path": "/",
+    "description": "WebGPU conformance test suite."
+  },
+  {
     "path": "/null",
     "description": "Placeholder file."
   },
   {
-    "path": "/buffers/null",
-    "description": "Placeholder file."
+    "path": "/buffers/",
+    "description": "WebGPUBuffer tests."
+  },
+  {
+    "path": "/buffers/setSubData",
+    "description": "setSubData tests."
+  },
+  {
+    "path": "/textures/",
+    "description": "WebGPUTexture tests."
   },
   {
     "path": "/textures/null",

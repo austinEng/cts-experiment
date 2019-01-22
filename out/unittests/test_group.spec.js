@@ -1,29 +1,26 @@
 export const description = `
 Unit tests for parameterization system.
 `;
-import { TestClass, TestGroup, } from "../framework/index.js";
+import { Fixture, TestGroup, } from "../framework/index.js";
 export const group = new TestGroup();
-function print(log, p) {
-    log.log(JSON.stringify(p));
+// TODO: these tests should really create their own TestGroup and assert things about it
+function print(t) {
+    t.log(JSON.stringify(t.params));
 }
-group.test("noclass_noparams", {}, print);
-group.test("noclass_params", {
-    cases: [{ a: 1 }, { a: 2 }],
-}, print);
-class Printer extends TestClass {
+group.test("test", (t) => { });
+group.testp("testp", { a: 1 }, print);
+class Printer extends Fixture {
+    static create(log, params) {
+        return new Printer(log, params);
+    }
     print() {
-        this.log.log(JSON.stringify(this.params));
+        this.log(JSON.stringify(this.params));
     }
 }
-group.test("class_noparams", {
-    class: Printer,
-}, function () {
-    this.print();
+group.testf("testf", Printer, (t) => {
+    t.print();
 });
-group.test("class_params", {
-    class: Printer,
-    cases: [{ a: 1 }, { a: 2 }],
-}, function () {
-    this.print();
+group.testpf("testpf", { a: 1 }, Printer, (t) => {
+    t.print();
 });
 //# sourceMappingURL=test_group.spec.js.map

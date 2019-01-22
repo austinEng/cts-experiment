@@ -1,5 +1,5 @@
 export function pcombine(params) { return new PCombine(params); }
-export class PCombine {
+class PCombine {
     static merge(a, b) {
         for (const key of Object.keys(a)) {
             if (b.hasOwnProperty(key)) {
@@ -10,7 +10,6 @@ export class PCombine {
     }
     static *cartesian(iters) {
         if (iters.length === 0) {
-            yield {};
             return;
         }
         if (iters.length === 1) {

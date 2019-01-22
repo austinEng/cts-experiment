@@ -5,10 +5,10 @@
   ],
   "jsRules": {},
   "rules": {
+    "no-bitwise": false,
     "no-empty": false,
     "max-classes-per-file": false,
-    "max-line-length": [true, 100],
-    "no-implicit-dependencies": [true, ["framework"]]
+    "max-line-length": [true, 100]
   },
   "rulesDirectory": [],
   "linterOptions": {
