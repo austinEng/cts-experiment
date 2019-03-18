@@ -127,6 +127,10 @@ class Adapter {
     async requestDevice(descriptor) {
         return new Device(this, descriptor);
     }
+    // TODO: remove.
+    createDevice(descriptor) {
+        return new Device(this, descriptor);
+    }
 }
 const gpu = {
     async requestAdapter(options) {
