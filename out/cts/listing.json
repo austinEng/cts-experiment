@@ -16,6 +16,10 @@
     "description": "setSubData tests."
   },
   {
+    "path": "/command_buffer/basic",
+    "description": "Basic tests."
+  },
+  {
     "path": "/textures/",
     "description": "WebGPUTexture tests."
   },

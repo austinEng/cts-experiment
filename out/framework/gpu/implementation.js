@@ -10,12 +10,16 @@ export function getGPU() {
             dawn = true;
         }
     }
-    if (dawn) {
+    if (typeof navigator !== "undefined" && "gpu" in navigator) {
+        // @ts-ignore: TS7017
+        impl = navigator.gpu;
+    }
+    else if (dawn) {
         impl = import("../../../dawn").then((mod) => mod.default);
     }
     else {
         // tslint:disable-next-line no-console
-        console.warn("Dawn implementation not found. Using dummy.");
+        console.warn("Neither navigator.gpu nor Dawn was found. Using dummy.");
         impl = import("./dummy.js").then((mod) => mod.default);
     }
     return impl;

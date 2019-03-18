@@ -12,41 +12,35 @@ class BindGroupLayout {
 class Buffer {
     constructor() {
         this.mapping = null;
-        this.status = "valid";
     }
-    destroy() {
-        this.status = "invalid";
-    }
+    destroy() { }
     unmap() { }
-    _getStatus() {
-        return this.status;
-    }
-    // TODO: TBD
-    mapReadAsync(offset, size, callback) {
-        setTimeout(() => callback(new ArrayBuffer(size)), 0);
+    async mapReadAsync() {
+        return new ArrayBuffer(0);
     }
     setSubData(offset, ab) { }
 }
-class CommandBuffer {
+class CommandEncoder {
     beginComputePass() {
-        return new ComputePassEncoder(this);
+        return new ComputePassEncoder();
     }
     beginRenderPass(descriptor) {
-        return new RenderPassEncoder(this);
+        return new RenderPassEncoder();
     }
     blit() { }
     copyBufferToBuffer(src, srcOffset, dst, dstOffset, size) { }
     copyBufferToTexture(source, destination, copySize) { }
     copyTextureToBuffer(source, destination, copySize) { }
     copyTextureToTexture(source, destination, copySize) { }
+    finish() {
+        return new CommandBuffer();
+    }
+}
+class CommandBuffer {
 }
 class ProgrammablePassEncoder {
-    constructor(commandBuffer) {
-        this.commandBuffer = commandBuffer;
-    }
-    endPass() {
-        return this.commandBuffer;
-    }
+    constructor() { }
+    endPass() { }
     insertDebugMarker(markerLabel) { }
     popDebugGroup(groupLabel) { }
     pushDebugGroup(groupLabel) { }
@@ -54,9 +48,6 @@ class ProgrammablePassEncoder {
     setPipeline(pipeline) { }
 }
 class ComputePassEncoder extends ProgrammablePassEncoder {
-    constructor(commandBuffer) {
-        super(commandBuffer);
-    }
     dispatch(x, y, z) { }
 }
 class RenderPassEncoder extends ProgrammablePassEncoder {
@@ -88,21 +79,14 @@ class Sampler {
 class ShaderModule {
 }
 class Texture {
-    constructor() {
-        this.status = "valid";
-    }
+    constructor() { }
     createDefaultTextureView() {
         return new TextureView();
     }
     createTextureView(desc) {
         return new TextureView();
     }
-    destroy() {
-        this.status = "invalid";
-    }
-    _getStatus() {
-        return this.status;
-    }
+    destroy() { }
 }
 class TextureView {
     constructor() { }
@@ -112,52 +96,26 @@ class Queue {
     submit(buffers) { }
     wait(fence, valueToWait) { }
 }
-class Device {
+class Device extends EventTarget {
     constructor(adapter, descriptor) {
+        super();
         this.limits = kDefaultLimits;
         this.queue = new Queue();
         this.adapter = adapter;
         this.extensions = descriptor.extensions || kNoExtensions;
     }
-    createBindGroup(descriptor) {
-        return new BindGroup();
-    }
-    createBindGroupLayout(descriptor) {
-        return new BindGroupLayout();
-    }
-    createBuffer(descriptor) {
-        return new Buffer();
-    }
-    createCommandBuffer(descriptor) {
-        return new CommandBuffer();
-    }
-    createComputePipeline(descriptor) {
-        return new ComputePipeline();
-    }
-    createFence(descriptor) {
-        return new Fence();
-    }
-    createPipelineLayout(descriptor) {
-        return new PipelineLayout();
-    }
-    createRenderPipeline(descriptor) {
-        return new RenderPipeline();
-    }
-    createSampler(descriptor) {
-        return new Sampler();
-    }
-    createShaderModule(descriptor) {
-        return new ShaderModule();
-    }
-    createTexture(descriptor) {
-        return new Texture();
-    }
-    getObjectStatus(statusableObject) {
-        return Promise.resolve(statusableObject._getStatus());
-    }
-    getQueue() {
-        return this.queue;
-    }
+    createBindGroup(descriptor) { return new BindGroup(); }
+    createBindGroupLayout(descriptor) { return new BindGroupLayout(); }
+    createBuffer(descriptor) { return new Buffer(); }
+    createCommandEncoder(descriptor) { return new CommandEncoder(); }
+    createComputePipeline(descriptor) { return new ComputePipeline(); }
+    createFence(descriptor) { return new Fence(); }
+    createPipelineLayout(descriptor) { return new PipelineLayout(); }
+    createRenderPipeline(descriptor) { return new RenderPipeline(); }
+    createSampler(descriptor) { return new Sampler(); }
+    createShaderModule(descriptor) { return new ShaderModule(); }
+    createTexture(descriptor) { return new Texture(); }
+    getQueue() { return this.queue; }
     // TODO: temporary
     flush() { }
 }
@@ -166,17 +124,13 @@ class Adapter {
         this.extensions = kNoExtensions;
         this.name = "dummy";
     }
-    createDevice(descriptor) {
+    async requestDevice(descriptor) {
         return new Device(this, descriptor);
     }
 }
 const gpu = {
-    requestAdapter(options) {
-        return Promise.resolve(new Adapter());
-    },
-    // TODO: temporary
-    getDevice() {
-        return new Device(new Adapter(), {});
+    async requestAdapter(options) {
+        return new Adapter();
     },
 };
 export default gpu;
