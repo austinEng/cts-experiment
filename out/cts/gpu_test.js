@@ -1,6 +1,7 @@
 import { getGPU } from "../framework/gpu/implementation.js";
 import { Fixture } from "../framework/index.js";
 export class GPUTest extends Fixture {
+    // TODO: Need to get rid of this so test fixtures can be created more easily.
     static async create(log, params) {
         const gpu = await getGPU();
         const adapter = await gpu.requestAdapter();

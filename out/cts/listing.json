@@ -20,6 +20,10 @@
     "description": "Basic tests."
   },
   {
+    "path": "/command_buffer/copies",
+    "description": "copy{Buffer,Texture}To{Buffer,Texture} tests."
+  },
+  {
     "path": "/textures/",
     "description": "WebGPUTexture tests."
   },
