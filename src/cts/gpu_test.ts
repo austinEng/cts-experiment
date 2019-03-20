@@ -15,13 +15,29 @@ export class GPUTest extends Fixture {
     const device = adapter.createDevice({}); // TODO: await adapter.requestDevice()
     return new GPUTest(log, params, device);
   }
-  public device: GPUDevice;
+  //public device: GPUDevice;
+  public device: any; // TODO: update framework/gpu to match sketch again
   public queue: GPUQueue;
 
   protected constructor(log: CaseRecorder, params: IParamsAny, device: GPUDevice) {
     super(log, params);
     this.device = device;
     this.queue = this.device.getQueue();
+  }
+
+  public compile(type: ("f" | "v" | "c"), source: string): ArrayBuffer {
+    // @ts-ignore TS2339
+    const Shaderc: any = window.Module;
+
+    const compiler = new Shaderc.Compiler();
+    const opts = new Shaderc.CompilerOptions();
+    const result = compiler.CompileGlslToSpv(source,
+        type === "f" ? Shaderc.shader_kind.fragment :
+        type === "v" ? Shaderc.shader_kind.vertex :
+        type === "c" ? Shaderc.shader_kind.compute : null,
+        "", "main", opts);
+    console.warn(result.GetErrorMessage());
+    return result.GetBinary();
   }
 
   public async expectContents(src: GPUBuffer, expected: Uint8Array): Promise<void> {

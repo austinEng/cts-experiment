@@ -30,5 +30,13 @@
   {
     "path": "/textures/null",
     "description": "Placeholder file."
+  },
+  {
+    "path": "/command_buffer/compute/basic",
+    "description": "Basic command buffer compute tests."
+  },
+  {
+    "path": "/command_buffer/render/basic",
+    "description": "Basic command buffer rendering tests."
   }
 ]

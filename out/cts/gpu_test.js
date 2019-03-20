@@ -13,6 +13,17 @@ export class GPUTest extends Fixture {
         this.device = device;
         this.queue = this.device.getQueue();
     }
+    compile(type, source) {
+        // @ts-ignore TS2339
+        const Shaderc = window.Module;
+        const compiler = new Shaderc.Compiler();
+        const opts = new Shaderc.CompilerOptions();
+        const result = compiler.CompileGlslToSpv(source, type === "f" ? Shaderc.shader_kind.fragment :
+            type === "v" ? Shaderc.shader_kind.vertex :
+                type === "c" ? Shaderc.shader_kind.compute : null, "", "main", opts);
+        console.warn(result.GetErrorMessage());
+        return result.GetBinary();
+    }
     async expectContents(src, expected) {
         const size = expected.length;
         const dst = this.device.createBuffer({
