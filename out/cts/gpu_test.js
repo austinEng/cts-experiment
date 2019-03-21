@@ -14,13 +14,14 @@ export class GPUTest extends Fixture {
         this.queue = this.device.getQueue();
     }
     compile(type, source) {
+        // TODO: integrate this less hackily (and make it work without index.html)
         // @ts-ignore TS2339
         const Shaderc = window.Module;
         const compiler = new Shaderc.Compiler();
         const opts = new Shaderc.CompileOptions();
         const result = compiler.CompileGlslToSpv(source, type === "f" ? Shaderc.shader_kind.fragment :
             type === "v" ? Shaderc.shader_kind.vertex :
-                type === "c" ? Shaderc.shader_kind.compute : null, "", "main", opts);
+                type === "c" ? Shaderc.shader_kind.compute : null, "a.glsl", "main", opts);
         console.warn(result.GetErrorMessage());
         return result.GetBinary();
     }
