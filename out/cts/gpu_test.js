@@ -23,7 +23,7 @@ export class GPUTest extends Fixture {
             type === "v" ? Shaderc.shader_kind.vertex :
                 type === "c" ? Shaderc.shader_kind.compute : null, "a.glsl", "main", opts);
         console.warn(result.GetErrorMessage());
-        return result.GetBinary();
+        return result.GetBinary().slice().buffer;
     }
     async expectContents(src, expected) {
         const size = expected.length;
