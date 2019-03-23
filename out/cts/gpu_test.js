@@ -22,7 +22,10 @@ export class GPUTest extends Fixture {
         const result = compiler.CompileGlslToSpv(source, type === "f" ? Shaderc.shader_kind.fragment :
             type === "v" ? Shaderc.shader_kind.vertex :
                 type === "c" ? Shaderc.shader_kind.compute : null, "a.glsl", "main", opts);
-        console.warn(result.GetErrorMessage());
+        const error = result.GetErrorMessage();
+        if (error) {
+            console.warn(error);
+        }
         return result.GetBinary().slice().buffer;
     }
     async expectContents(src, expected) {

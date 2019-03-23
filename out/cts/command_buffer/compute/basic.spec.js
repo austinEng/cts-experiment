@@ -6,8 +6,8 @@ import { GPUTest } from "../../gpu_test.js";
 export const group = new TestGroup();
 group.testf("memcpy", GPUTest, async (t) => {
     const data = new Uint32Array([0x01020304]).buffer;
-    const src = t.device.createBuffer({ size: 4, usage: 4 | 8 });
-    const dst = t.device.createBuffer({ size: 4, usage: 4 | 8 });
+    const src = t.device.createBuffer({ size: 4, usage: 8 | 128 });
+    const dst = t.device.createBuffer({ size: 4, usage: 4 | 128 });
     src.setSubData(0, data);
     const code = t.compile("c", `#version 450
     layout(std140, set = 0, binding = 0) buffer Src {
