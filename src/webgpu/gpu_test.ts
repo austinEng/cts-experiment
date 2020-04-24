@@ -3,6 +3,13 @@ import { compileGLSL, initGLSL } from '../common/framework/glsl.js';
 import { getGPU } from '../common/framework/gpu/implementation.js';
 import { assert, unreachable } from '../common/framework/util/util.js';
 
+import {
+  fillTextureDataWithTexelValue,
+  getTextureCopyLayout,
+  LayoutOptions as TextureLayoutOptions,
+} from './util/texture/layout.js';
+import { PerTexelComponent, getTexelDataRepresentation } from './util/texture/texelData.js';
+
 type ShaderStage = import('@webgpu/glslang/dist/web-devel/glslang').ShaderStage;
 
 type TypedArrayBufferView =
@@ -25,6 +32,7 @@ type TypedArrayBufferViewConstructor =
   | Float32ArrayConstructor
   | Float64ArrayConstructor;
 
+type ExpectSingleColorOptions = TextureLayoutOptions & { slice: number };
 class DevicePool {
   device: GPUDevice | undefined = undefined;
   state: 'free' | 'acquired' | 'uninitialized' | 'failed' = 'uninitialized';
@@ -224,5 +232,80 @@ export class GPUTest extends Fixture {
       return lines.join('\n');
     }
     return undefined;
+  }
+
+  expectSingleColor(
+    src: GPUTexture,
+    format: GPUTextureFormat,
+    size: [number, number, number],
+    exp: PerTexelComponent<number>
+  ): void;
+  expectSingleColor(
+    src: GPUTexture,
+    format: GPUTextureFormat,
+    size: [number, number, number],
+    dimension: GPUTextureDimension,
+    exp: PerTexelComponent<number>
+  ): void;
+  expectSingleColor(
+    src: GPUTexture,
+    format: GPUTextureFormat,
+    size: [number, number, number],
+    dimension: GPUTextureDimension,
+    options: ExpectSingleColorOptions,
+    exp: PerTexelComponent<number>
+  ): void;
+  expectSingleColor(
+    src: GPUTexture,
+    format: GPUTextureFormat,
+    size: [number, number, number],
+    arg4: GPUTextureDimension | PerTexelComponent<number>,
+    arg5?: PerTexelComponent<number> | ExpectSingleColorOptions,
+    arg6?: PerTexelComponent<number>
+  ): void {
+    let dimension: GPUTextureDimension;
+    let options: ExpectSingleColorOptions | undefined = undefined;
+    let exp: PerTexelComponent<number>;
+
+    if (arguments.length === 4) {
+      dimension = '2d';
+      exp = arg4 as PerTexelComponent<number>;
+    } else {
+      dimension = arg4 as GPUTextureDimension;
+      if (arguments.length === 5) {
+        exp = arg5 as PerTexelComponent<number>;
+      } else {
+        options = arg5 as ExpectSingleColorOptions;
+        exp = arg6 as PerTexelComponent<number>;
+      }
+    }
+
+    const { byteLength, bytesPerRow, rowsPerImage } = getTextureCopyLayout(
+      format,
+      dimension,
+      size,
+      options
+    );
+    const expectedTexelData = getTexelDataRepresentation(format).getBytes(exp);
+
+    const buffer = this.device.createBuffer({
+      size: byteLength,
+      usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+    });
+
+    const commandEncoder = this.device.createCommandEncoder();
+    commandEncoder.copyTextureToBuffer(
+      { texture: src, mipLevel: options?.mipLevel, arrayLayer: options?.slice },
+      {
+        buffer,
+        bytesPerRow,
+        rowsPerImage,
+      },
+      size
+    );
+    this.queue.submit([commandEncoder.finish()]);
+    const arrayBuffer = new ArrayBuffer(byteLength);
+    fillTextureDataWithTexelValue(expectedTexelData, format, dimension, arrayBuffer, size, options);
+    this.expectContents(buffer, new Uint8Array(arrayBuffer));
   }
 }
