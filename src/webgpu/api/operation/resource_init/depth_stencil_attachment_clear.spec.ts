@@ -197,8 +197,9 @@ class DepthStencilAttachmentClearTest extends TextureZeroInitTest {
 
       this.queue.submit([commandEncoder.finish()]);
 
-      this.expectSingleColor(resolveTexture || renderTexture, 'r8unorm', [width, height, 1], {
-        R: 1,
+      this.expectSingleColor(resolveTexture || renderTexture, 'r8unorm', {
+        size: [width, height, 1],
+        exp: { R: 1 },
       });
     }
   }

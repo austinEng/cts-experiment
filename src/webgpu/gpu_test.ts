@@ -32,7 +32,6 @@ type TypedArrayBufferViewConstructor =
   | Float32ArrayConstructor
   | Float64ArrayConstructor;
 
-type ExpectSingleColorOptions = TextureLayoutOptions & { slice: number };
 class DevicePool {
   device: GPUDevice | undefined = undefined;
   state: 'free' | 'acquired' | 'uninitialized' | 'failed' = 'uninitialized';
@@ -237,54 +236,25 @@ export class GPUTest extends Fixture {
   expectSingleColor(
     src: GPUTexture,
     format: GPUTextureFormat,
-    size: [number, number, number],
-    exp: PerTexelComponent<number>
-  ): void;
-  expectSingleColor(
-    src: GPUTexture,
-    format: GPUTextureFormat,
-    size: [number, number, number],
-    dimension: GPUTextureDimension,
-    exp: PerTexelComponent<number>
-  ): void;
-  expectSingleColor(
-    src: GPUTexture,
-    format: GPUTextureFormat,
-    size: [number, number, number],
-    dimension: GPUTextureDimension,
-    options: ExpectSingleColorOptions,
-    exp: PerTexelComponent<number>
-  ): void;
-  expectSingleColor(
-    src: GPUTexture,
-    format: GPUTextureFormat,
-    size: [number, number, number],
-    arg4: GPUTextureDimension | PerTexelComponent<number>,
-    arg5?: PerTexelComponent<number> | ExpectSingleColorOptions,
-    arg6?: PerTexelComponent<number>
-  ): void {
-    let dimension: GPUTextureDimension;
-    let options: ExpectSingleColorOptions | undefined = undefined;
-    let exp: PerTexelComponent<number>;
-
-    if (arguments.length === 4) {
-      dimension = '2d';
-      exp = arg4 as PerTexelComponent<number>;
-    } else {
-      dimension = arg4 as GPUTextureDimension;
-      if (arguments.length === 5) {
-        exp = arg5 as PerTexelComponent<number>;
-      } else {
-        options = arg5 as ExpectSingleColorOptions;
-        exp = arg6 as PerTexelComponent<number>;
-      }
+    {
+      size,
+      exp,
+      dimension = '2d',
+      slice = 0,
+      layout,
+    }: {
+      size: [number, number, number];
+      exp: PerTexelComponent<number>;
+      dimension?: GPUTextureDimension;
+      slice?: number;
+      layout?: TextureLayoutOptions;
     }
-
+  ): void {
     const { byteLength, bytesPerRow, rowsPerImage } = getTextureCopyLayout(
       format,
       dimension,
       size,
-      options
+      layout
     );
     const expectedTexelData = getTexelDataRepresentation(format).getBytes(exp);
 
@@ -295,17 +265,13 @@ export class GPUTest extends Fixture {
 
     const commandEncoder = this.device.createCommandEncoder();
     commandEncoder.copyTextureToBuffer(
-      { texture: src, mipLevel: options?.mipLevel, arrayLayer: options?.slice },
-      {
-        buffer,
-        bytesPerRow,
-        rowsPerImage,
-      },
+      { texture: src, mipLevel: layout?.mipLevel, arrayLayer: slice },
+      { buffer, bytesPerRow, rowsPerImage },
       size
     );
     this.queue.submit([commandEncoder.finish()]);
     const arrayBuffer = new ArrayBuffer(byteLength);
-    fillTextureDataWithTexelValue(expectedTexelData, format, dimension, arrayBuffer, size, options);
+    fillTextureDataWithTexelValue(expectedTexelData, format, dimension, arrayBuffer, size, layout);
     this.expectContents(buffer, new Uint8Array(arrayBuffer));
   }
 }

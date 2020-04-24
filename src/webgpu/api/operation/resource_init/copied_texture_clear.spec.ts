@@ -16,17 +16,13 @@ class CopiedTextureClearTest extends TextureZeroInitTest {
     for (const { level: mipLevel, slice } of subresourceRange.each()) {
       assert(this.params.dimension === '2d');
 
-      this.expectSingleColor(
-        texture,
-        this.params.format,
-        [this.textureWidth, this.textureHeight, 1],
-        this.params.dimension,
-        {
-          mipLevel,
-          slice,
-        },
-        this.stateToTexelComponents[state]
-      );
+      this.expectSingleColor(texture, this.params.format, {
+        size: [this.textureWidth, this.textureHeight, 1],
+        dimension: this.params.dimension,
+        slice,
+        layout: { mipLevel },
+        exp: this.stateToTexelComponents[state],
+      });
     }
   }
 
@@ -55,12 +51,10 @@ class CopiedTextureClearTest extends TextureZeroInitTest {
       );
       this.queue.submit([commandEncoder.finish()]);
 
-      this.expectSingleColor(
-        dst,
-        this.params.format,
-        [width, height, 1],
-        this.stateToTexelComponents[state]
-      );
+      this.expectSingleColor(dst, this.params.format, {
+        size: [width, height, 1],
+        exp: this.stateToTexelComponents[state],
+      });
     }
   }
 

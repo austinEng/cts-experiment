@@ -68,7 +68,8 @@ g.test('storeOp controls whether 1x1 drawn quad is stored')
     t.device.defaultQueue.submit([encoder.finish()]);
 
     // expect the buffer to be clear
-    t.expectSingleColor(renderTexture, 'r8unorm', [1, 1, 1], {
-      R: t.params._expected,
+    t.expectSingleColor(renderTexture, 'r8unorm', {
+      size: [1, 1, 1],
+      exp: { R: t.params._expected },
     });
   });
