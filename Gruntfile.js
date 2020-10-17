@@ -22,29 +22,11 @@ module.exports = function (grunt) {
       },
       'generate-wpt-cts-html': {
         cmd: 'node',
-        args: ['tools/gen_wpt_cts_html', 'out-wpt/cts.html', 'src/common/templates/cts.html'],
+        args: ['tools/gen_wpt_cts_html', 'runner/wpt/cts.html', 'src/common/templates/cts.html'],
       },
       unittest: {
         cmd: 'node',
         args: ['tools/run', 'unittests:*'],
-      },
-      'build-out-wpt': {
-        cmd: 'node',
-        args: [
-          'node_modules/@babel/cli/bin/babel',
-          '--extensions=.ts',
-          '--source-maps=false',
-          '--delete-dir-on-start',
-          '--out-dir=out-wpt/',
-          'src/',
-          '--only=src/common/framework/',
-          '--only=src/common/runtime/helper/',
-          '--only=src/common/runtime/wpt.ts',
-          '--only=src/webgpu/',
-          // These files will be generated, instead of compiled from TypeScript.
-          '--ignore=src/common/framework/version.ts',
-          '--ignore=src/webgpu/listing.ts',
-        ],
       },
       lint: {
         cmd: 'node',
@@ -54,10 +36,6 @@ module.exports = function (grunt) {
         cmd: 'node',
         args: ['node_modules/eslint/bin/eslint', 'src/**/*.ts', '--fix'],
       },
-      'autoformat-out-wpt': {
-        cmd: 'node',
-        args: ['node_modules/prettier/bin-prettier', '--loglevel=warn', '--write', 'out-wpt/**/*.js'],
-      }
     },
 
     copy: {
@@ -118,12 +96,8 @@ module.exports = function (grunt) {
     'run:generate-listings',
   ]);
   grunt.registerTask('build-wpt', 'Build out/ (no checks)', [
-    'run:build-out-wpt',
-    'run:autoformat-out-wpt',
     'run:generate-version',
     'run:generate-listings',
-    'copy:out-wpt-generated',
-    'copy:out-wpt-htmlfiles',
     'run:generate-wpt-cts-html',
   ]);
   grunt.registerTask('build-done-message', () => {
