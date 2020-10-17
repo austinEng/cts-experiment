@@ -42,7 +42,7 @@ export abstract class TestFileLoader {
 
 export class DefaultTestFileLoader extends TestFileLoader {
   async listing(suite: string): Promise<TestSuiteListing> {
-    return ((await import(`../../${suite}/listing.js`)) as ListingFile).listing;
+    return ((await import(`../../../out/${suite}/listing.js`)) as ListingFile).listing;
   }
 
   import(path: string): Promise<SpecFile> {

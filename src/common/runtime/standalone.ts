@@ -29,8 +29,6 @@ const resultsJSON = document.getElementById('resultsJSON')!;
 
 type RunSubtree = () => Promise<void>;
 
-// DOM generation
-
 function makeTreeNodeHTML(
   tree: TestTreeNode,
   parentLevel: TestQueryLevel
