@@ -1,4 +1,4 @@
-import { SkipTestCase } from '../fixture.js';
+import { SkipTestCase, UnexpectedPassError } from '../fixture.js';
 import { now, assert } from '../util/util.js';
 
 import { LogMessageWithStack } from './log_message.js';
@@ -18,6 +18,8 @@ const kMaxLogStacks = 2;
 /** Holds onto a LiveTestCaseResult owned by the Logger, and writes the results into it. */
 export class TestCaseRecorder {
   private result: LiveTestCaseResult;
+  private inSubCase: boolean = false;
+  private subCaseStatus = LogSeverity.Pass;
   private finalCaseStatus = LogSeverity.Pass;
   private hideStacksBelowSeverity = LogSeverity.Warn;
   private startTime = -1;
@@ -55,6 +57,22 @@ export class TestCaseRecorder {
         : 'fail'; // Everything else is an error
 
     this.result.logs = this.logs;
+  }
+
+  beginSubCase() {
+    this.subCaseStatus = LogSeverity.Pass;
+    this.inSubCase = true;
+  }
+
+  endSubCase(expectedStatus: 'pass' | 'fail' | 'skip') {
+    if (this.subCaseStatus > this.finalCaseStatus) {
+      this.finalCaseStatus = this.subCaseStatus;
+    }
+
+    this.inSubCase = false;
+    if (expectedStatus === 'fail' && this.subCaseStatus < LogSeverity.Warn) {
+      throw new UnexpectedPassError();
+    }
   }
 
   injectResult(injectedResult: LiveTestCaseResult): void {
@@ -108,7 +126,11 @@ export class TestCaseRecorder {
     }
 
     // Final case status should be the "worst" of all log entries.
-    if (level > this.finalCaseStatus) this.finalCaseStatus = level;
+    if (this.inSubCase) {
+      if (level > this.subCaseStatus) this.subCaseStatus = level;
+    } else {
+      if (level > this.finalCaseStatus) this.finalCaseStatus = level;
+    }
 
     // setStackHidden for all logs except `kMaxLogStacks` stacks at the highest severity
     if (level > this.hideStacksBelowSeverity) {

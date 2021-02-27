@@ -8,6 +8,7 @@ import {
   TestQuerySingleCase,
   TestQueryMultiFile,
   TestQueryMultiTest,
+  TestQueryWithExpectation,
 } from './query/query.js';
 import { kBigSeparator, kWildcard, kPathSeparator, kParamSeparator } from './query/separators.js';
 import { stringifySingleParam } from './query/stringify_params.js';
@@ -142,7 +143,8 @@ export class TestTree {
 export async function loadTreeForQuery(
   loader: TestFileLoader,
   queryToLoad: TestQuery,
-  subqueriesToExpand: TestQuery[]
+  subqueriesToExpand: TestQuery[],
+  expectations: TestQueryWithExpectation[]
 ): Promise<TestTree> {
   const suite = queryToLoad.suite;
   const specs = await loader.listing(suite);
@@ -176,6 +178,7 @@ export async function loadTreeForQuery(
       continue;
     }
 
+    let expectationsL1: typeof expectations;
     {
       const queryL1 = new TestQueryMultiFile(suite, entry.file);
       const orderingL1 = compareQueries(queryL1, queryToLoad);
@@ -183,6 +186,9 @@ export async function loadTreeForQuery(
         // File path is not matched by this query.
         continue;
       }
+      expectationsL1 = expectations.filter(
+        exp => compareQueries(queryL1, exp.query) !== Ordering.Unordered
+      );
     }
 
     if ('readme' in entry) {
@@ -213,6 +219,7 @@ export async function loadTreeForQuery(
     );
 
     for (const t of spec.g.iterate()) {
+      let expectationsL2: typeof expectations;
       {
         const queryL2 = new TestQueryMultiCase(suite, entry.file, t.testPath, {});
         const orderingL2 = compareQueries(queryL2, queryToLoad);
@@ -220,6 +227,9 @@ export async function loadTreeForQuery(
           // Test path is not matched by this query.
           continue;
         }
+        expectationsL2 = expectationsL1.filter(
+          exp => compareQueries(queryL2, exp.query) !== Ordering.Unordered
+        );
       }
 
       // subtreeL2 is suite:a,b:c,d:*
@@ -243,6 +253,7 @@ export async function loadTreeForQuery(
           }
         }
 
+        c.setExpectations(expectationsL2);
         // Leaf for case is suite:a,b:c,d:x=1;y=2
         addLeafForCase(subtreeL2, c, isCollapsible);
 

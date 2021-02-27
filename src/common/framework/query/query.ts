@@ -22,6 +22,11 @@ export type TestQueryLevel =
   | 3 // MultiCase
   | 4; // SingleCase
 
+export interface TestQueryWithExpectation {
+  query: TestQuery;
+  expectation: 'skip' | 'fail';
+}
+
 /**
  * A multi-file test query, like `s:*` or `s:a,b,*`.
  *

@@ -3,6 +3,7 @@
 import { DefaultTestFileLoader } from '../framework/file_loader.js';
 import { Logger } from '../framework/logging/logger.js';
 import { parseQuery } from '../framework/query/parseQuery.js';
+import { TestQueryWithExpectation } from '../framework/query/query.js';
 import { assert } from '../framework/util/util.js';
 
 import { optionEnabled } from './helper/options.js';
@@ -23,11 +24,26 @@ setup({
   explicit_done: true,
 });
 
+declare let __WEBGPU_TEST_HARNESS_EXPECTATIONS_PATH__: string | undefined;
+
 (async () => {
+  const expectationList: TestQueryWithExpectation[] = [];
+  if (typeof __WEBGPU_TEST_HARNESS_EXPECTATIONS_PATH__ !== 'undefined') {
+    await import(__WEBGPU_TEST_HARNESS_EXPECTATIONS_PATH__).then(({ expectations }) => {
+      for (const [query, expectation] of Object.entries(expectations)) {
+        assert(expectation === 'skip' || expectation === 'fail');
+        expectationList.push({
+          query: parseQuery(query),
+          expectation,
+        });
+      }
+    });
+  }
+
   const loader = new DefaultTestFileLoader();
   const qs = new URLSearchParams(window.location.search).getAll('q');
   assert(qs.length === 1, 'currently, there must be exactly one ?q=');
-  const testcases = await loader.loadCases(parseQuery(qs[0]));
+  const testcases = await loader.loadCases(parseQuery(qs[0]), expectationList);
 
   const worker = optionEnabled('worker') ? new TestWorker(false) : undefined;
 

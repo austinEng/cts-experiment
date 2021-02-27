@@ -8,6 +8,7 @@ import { DefaultTestFileLoader } from '../framework/file_loader.js';
 import { Logger } from '../framework/logging/logger.js';
 import { LiveTestCaseResult } from '../framework/logging/result.js';
 import { parseQuery } from '../framework/query/parseQuery.js';
+import { TestQueryWithExpectation } from '../framework/query/query.js';
 import { assert, unreachable } from '../framework/util/util.js';
 
 function usage(rc: number): never {
@@ -29,8 +30,11 @@ if (!fs.existsSync('src/common/runtime/cmdline.ts')) {
 let verbose = false;
 let debug = false;
 let printJSON = false;
+const expectations: TestQueryWithExpectation[] = [];
+
 const queries: string[] = [];
-for (const a of process.argv.slice(2)) {
+for (let i = 2; i < process.argv.length; ++i) {
+  const a = process.argv[i];
   if (a.startsWith('-')) {
     if (a === '--verbose') {
       verbose = true;
@@ -38,6 +42,14 @@ for (const a of process.argv.slice(2)) {
       debug = true;
     } else if (a === '--print-json') {
       printJSON = true;
+    } else if (a === '--expectations') {
+      for (const [query, expectation] of Object.entries(require(process.argv[++i]))) {
+        assert(expectation === 'skip' || expectation === 'fail');
+        expectations.push({
+          query: parseQuery(query),
+          expectation,
+        });
+      }
     } else {
       usage(1);
     }
@@ -54,7 +66,7 @@ if (queries.length === 0) {
   try {
     const loader = new DefaultTestFileLoader();
     assert(queries.length === 1, 'currently, there must be exactly one query on the cmd line');
-    const testcases = await loader.loadCases(parseQuery(queries[0]));
+    const testcases = await loader.loadCases(parseQuery(queries[0]), expectations);
 
     const log = new Logger(debug);
 

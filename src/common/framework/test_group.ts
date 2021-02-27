@@ -1,10 +1,22 @@
-import { Fixture, SkipTestCase } from './fixture.js';
+import { Fixture, SkipTestCase, UnexpectedPassError } from './fixture.js';
 import { TestCaseRecorder } from './logging/test_case_recorder.js';
-import { CaseParams, extractPublicParams, Merged, mergeParams } from './params_utils.js';
+import {
+  CaseParams,
+  extractPublicParams,
+  Merged,
+  mergeParams,
+  publicParamsEquals,
+} from './params_utils.js';
+import { comparePublicParamsPaths, Ordering } from './query/compare.js';
+import {
+  TestQueryMultiCase,
+  TestQuerySingleCase,
+  TestQueryWithExpectation,
+} from './query/query.js';
 import { kPathSeparator } from './query/separators.js';
 import { stringifyPublicParams, stringifyPublicParamsUniquely } from './query/stringify_params.js';
 import { validQueryPart } from './query/validQueryPart.js';
-import { assert } from './util/util.js';
+import { assert, unreachable } from './util/util.js';
 
 export type RunFn = (rec: TestCaseRecorder) => Promise<void>;
 
@@ -16,6 +28,7 @@ export interface TestCaseID {
 export interface RunCase {
   readonly id: TestCaseID;
   run: RunFn;
+  setExpectations(expectations: TestQueryWithExpectation[]): void;
 }
 
 // Interface for defining tests
@@ -212,7 +225,8 @@ class TestBuilder<F extends Fixture, P extends {}, SubP extends {}> {
         params,
         this.subcaseParams,
         this.fixture,
-        this.testFn
+        this.testFn,
+        this.testCreationStack
       );
     }
   }
@@ -230,27 +244,36 @@ class RunCaseSpecific<
   private readonly subParamGen?: (_: P) => Iterable<SubP>;
   private readonly fixture: FixtureClass<F>;
   private readonly fn: FN;
+  private readonly testCreationStack: Error;
+  private expectations: TestQueryWithExpectation[] = [];
 
   constructor(
     testPath: string[],
     params: P,
     subParamGen: ((_: P) => Iterable<SubP>) | undefined,
     fixture: FixtureClass<F>,
-    fn: FN
+    fn: FN,
+    testCreationStack: Error
   ) {
     this.id = { test: testPath, params: extractPublicParams(params) };
     this.params = params;
     this.subParamGen = subParamGen;
     this.fixture = fixture;
     this.fn = fn;
+    this.testCreationStack = testCreationStack;
   }
 
   async runTest(
     rec: TestCaseRecorder,
     params: P | Merged<P, SubP>,
-    throwSkip: boolean
+    throwSkip: boolean,
+    expectedStatus: 'pass' | 'fail' | 'skip'
   ): Promise<void> {
     try {
+      rec.beginSubCase();
+      if (expectedStatus === 'skip') {
+        throw new SkipTestCase(`Skipped by expecations`);
+      }
       const inst = new this.fixture(rec, params);
 
       try {
@@ -270,10 +293,53 @@ class RunCaseSpecific<
         throw ex;
       }
       rec.threw(ex);
+    } finally {
+      try {
+        rec.endSubCase(expectedStatus);
+      } catch (ex) {
+        assert(ex instanceof UnexpectedPassError);
+        ex.message = `Testcase passed unexpectedly.`;
+        ex.stack = this.testCreationStack.stack;
+        rec.warn(ex);
+      }
     }
   }
 
+  setExpectations(expectations: TestQueryWithExpectation[]): void {
+    this.expectations = expectations;
+  }
+
   async run(rec: TestCaseRecorder): Promise<void> {
+    const getExpectedStatus = (params: CaseParams) => {
+      let didSeeFail = false;
+      for (const exp of this.expectations) {
+        if (exp.query instanceof TestQueryMultiCase) {
+          const compare = comparePublicParamsPaths(exp.query.params, params);
+          if (compare === Ordering.Unordered || compare === Ordering.StrictSubset) {
+            continue;
+          }
+        } else if (exp.query instanceof TestQuerySingleCase) {
+          if (!publicParamsEquals(exp.query.params, params)) {
+            continue;
+          }
+        }
+
+        switch (exp.expectation) {
+          // Skip takes precendence. If there is any expecation indicating a skip,
+          // signal it immediately.
+          case 'skip':
+            return 'skip';
+          case 'fail':
+            // Otherwise, indicate that we might expect a failure.
+            didSeeFail = true;
+            break;
+          default:
+            unreachable();
+        }
+      }
+      return didSeeFail ? 'fail' : 'pass';
+    };
+
     rec.start();
     if (this.subParamGen) {
       let totalCount = 0;
@@ -281,7 +347,8 @@ class RunCaseSpecific<
       for (const subParams of this.subParamGen(this.params)) {
         rec.info(new Error('subcase: ' + stringifyPublicParams(subParams)));
         try {
-          await this.runTest(rec, mergeParams(this.params, subParams), true);
+          const params = mergeParams(this.params, subParams);
+          await this.runTest(rec, params, true, getExpectedStatus(params as CaseParams));
         } catch (ex) {
           if (ex instanceof SkipTestCase) {
             // Convert SkipTestCase to info messages
@@ -299,7 +366,7 @@ class RunCaseSpecific<
         rec.skipped(new SkipTestCase('all subcases were skipped'));
       }
     } else {
-      await this.runTest(rec, this.params, false);
+      await this.runTest(rec, this.params, false, getExpectedStatus(this.params));
     }
     rec.finish();
   }
