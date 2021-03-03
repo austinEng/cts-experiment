@@ -24,28 +24,46 @@ setup({
   explicit_done: true,
 });
 
-declare let __WEBGPU_TEST_HARNESS_EXPECTATIONS_PATH__: string | undefined;
-
 (async () => {
-  const expectationList: TestQueryWithExpectation[] = [];
-  if (typeof __WEBGPU_TEST_HARNESS_EXPECTATIONS_PATH__ !== 'undefined') {
-    await import(__WEBGPU_TEST_HARNESS_EXPECTATIONS_PATH__).then(({ expectations }) => {
-      for (const [query, expectation] of Object.entries(expectations)) {
-        assert(expectation === 'skip' || expectation === 'fail');
-        expectationList.push({
-          query: parseQuery(query),
-          expectation,
-        });
-      }
-    });
+  const workerEnabled = optionEnabled('worker');
+
+  let expectationsJsonResponse: Response | undefined;
+  try {
+    expectationsJsonResponse = await fetch(`http://localhost:3000/webgpuTestExpectations.json`);
+  } catch (err) {
+    expectationsJsonResponse = undefined;
   }
+
+  const expectations: TestQueryWithExpectation[] = [];
+  if (expectationsJsonResponse !== undefined) {
+    const expectationsJson = await expectationsJsonResponse.json();
+
+    for (const item of expectationsJson) {
+      const url = new URL(`${window.location.origin}/${item.query}`);
+      if (url.pathname !== window.location.pathname) {
+        continue;
+      }
+
+      const params = url.searchParams;
+      if (workerEnabled !== optionEnabled('worker', params)) {
+        continue;
+      }
+
+      const qs = params.getAll('q');
+      assert(qs.length === 1, 'currently, there must be exactly one ?q=');
+      expectations.push({
+        query: parseQuery(qs[0]),
+        expectation: item.expectation,
+      });
+    }
+  }
+
+  const worker = workerEnabled ? new TestWorker(false) : undefined;
 
   const loader = new DefaultTestFileLoader();
   const qs = new URLSearchParams(window.location.search).getAll('q');
   assert(qs.length === 1, 'currently, there must be exactly one ?q=');
-  const testcases = await loader.loadCases(parseQuery(qs[0]), expectationList);
-
-  const worker = optionEnabled('worker') ? new TestWorker(false) : undefined;
+  const testcases = await loader.loadCases(parseQuery(qs[0]), expectations);
 
   const log = new Logger(false);
 

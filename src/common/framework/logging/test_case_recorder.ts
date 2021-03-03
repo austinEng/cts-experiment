@@ -65,13 +65,19 @@ export class TestCaseRecorder {
   }
 
   endSubCase(expectedStatus: 'pass' | 'fail' | 'skip') {
-    if (this.subCaseStatus > this.finalCaseStatus) {
-      this.finalCaseStatus = this.subCaseStatus;
-    }
-
-    this.inSubCase = false;
-    if (expectedStatus === 'fail' && this.subCaseStatus < LogSeverity.Warn) {
-      throw new UnexpectedPassError();
+    try {
+      if (expectedStatus === 'fail') {
+        if (this.subCaseStatus <= LogSeverity.Warn) {
+          throw new UnexpectedPassError();
+        } else {
+          this.subCaseStatus = LogSeverity.Pass;
+        }
+      }
+    } finally {
+      this.inSubCase = false;
+      if (this.subCaseStatus > this.finalCaseStatus) {
+        this.finalCaseStatus = this.subCaseStatus;
+      }
     }
   }
 
