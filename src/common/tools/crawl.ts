@@ -14,15 +14,14 @@ const fg = require('fast-glob');
 
 const specFileSuffix = '.spec.ts';
 
-export async function crawl(suite: string): Promise<TestSuiteListingEntry[]> {
-  const suiteDir = 'src/' + suite;
+export async function crawl(suiteDir: string): Promise<TestSuiteListingEntry[]> {
   if (!fs.existsSync(suiteDir)) {
     console.error(`Could not find ${suiteDir}`);
     process.exit(1);
   }
 
-  const glob = `${suiteDir}/**/{README.txt,*${specFileSuffix}}`;
-  const filesToEnumerate: string[] = await fg(glob, { onlyFiles: true });
+  const glob = `**/{README.txt,*${specFileSuffix}}`;
+  const filesToEnumerate: string[] = await fg(glob, { onlyFiles: true, cwd: suiteDir });
   filesToEnumerate.sort();
 
   const entries: TestSuiteListingEntry[] = [];
@@ -65,6 +64,5 @@ export async function crawl(suite: string): Promise<TestSuiteListingEntry[]> {
 }
 
 export function makeListing(filename: string): Promise<TestSuiteListing> {
-  const suite = path.basename(path.dirname(filename));
-  return crawl(suite);
+  return crawl(path.dirname(filename));
 }
